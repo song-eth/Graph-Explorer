@@ -8,53 +8,6 @@ function Graph() {
 
   const fgRef = useRef();
 
-  const getTransactions = async () => {
-    try {
-      setGraphLoading(true);
-      const res = await fetch(`https://api.covalenthq.com/v1/80001/address/${addressETH}/transactions_v2/?quote-currency=USD&format=JSON&block-signed-at-asc=false&no-logs=false&key=`);
-      const { data } = await res.json();
-      console.log(data);
-
-      const nodes = [];
-      const links = [];
-      const tracks = {};
-
-      for(let i = 0; i < 10; i++){
-        if(!tracks[data.items[i].from_address]){
-          console.log(tracks[ data.items[i].from_address]);
-          tracks[data.items[i].from_address] =  nodes.length;
-          nodes.push({
-            "id": nodes.length,
-            "label": data.items[i].from_address,
-            "name":  data.items[i].from_address.substring(0,3) + "..." +  data.items[i].from_address.substring(39,42),
-            "group": 1,
-            "value": 6
-          })
-        }
-        if(!tracks[data.items[i].to_address]){
-          console.log(tracks[data.items[i].to_address]);
-          tracks[data.items[i].to_address] = nodes.length;
-          nodes.push({
-            "id": nodes.length,
-            "label": data.items[i].to_address,
-            "name": data.items[i].to_address.substring(0,3) + "..." +  data.items[i].to_address.substring(39,42),
-            "group": 1,
-            "value": 6
-          })
-        }
-        links.push({ "source": tracks[data.items[i].from_address], "target": tracks[data.items[i].to_address], "value": 1 });
-      }
-    
-      setGraphData({ nodes, links });
-      console.log({ nodes, links });
-
-      setGraphLoading(false);
-    } catch (error) {
-      console.error(error);
-      setGraphLoading(false);
-    }
-   }
-
   useEffect(() => {
     const fg = fgRef.current;
 
@@ -108,12 +61,67 @@ function Graph() {
     })();
   }
 
+  const getTransactions = async (currentAddressETH) => {
+    try {
+      setGraphLoading(true);
+      const res = await fetch(`https://api.covalenthq.com/v1/80001/address/${currentAddressETH}/transactions_v2/?quote-currency=USD&format=JSON&block-signed-at-asc=false&no-logs=false&key=`);
+      const { data } = await res.json();
+      console.log(data);
+
+      const nodes = [];
+      const links = [];
+      const tracks = {};
+
+      for(let i = 0; i < 10; i++){
+        if(!tracks[data.items[i].from_address]){
+          console.log(tracks[ data.items[i].from_address]);
+          tracks[data.items[i].from_address] =  nodes.length;
+          nodes.push({
+            "id": nodes.length,
+            "label": data.items[i].from_address,
+            "name":  data.items[i].from_address.substring(0,3) + "..." +  data.items[i].from_address.substring(39,42),
+            "group": 1,
+            "value": 6
+          })
+        }
+
+        if(data.items[i].to_address){
+          if(!tracks[data.items[i].to_address]){
+            console.log(tracks[data.items[i].to_address]);
+            tracks[data.items[i].to_address] = nodes.length;
+            nodes.push({
+              "id": nodes.length,
+              "label": data.items[i].to_address,
+              "name": data.items[i].to_address.substring(0,3) + "..." +  data.items[i].to_address.substring(39,42),
+              "group": 1,
+              "value": 6
+            })
+          }
+
+          links.push({ "source": tracks[data.items[i].from_address], "target": tracks[data.items[i].to_address], "value": 1 });
+        }
+      }
+    
+      setGraphData({ nodes, links });
+      console.log({ nodes, links });
+
+      setGraphLoading(false);
+    } catch (error) {
+      console.error(error);
+      setGraphLoading(false);
+    }
+  }
+
+  const searchGraph = () => {
+    getTransactions(addressETH);
+  }
+
   return (
     <>
       <input placeholder="address" onChange={(e) => setAddressEth(e.target.value)} />
-      <button onClick={getTransactions}>Search</button>
-      {/* <ForceGraph2D
-        graphData={graphData} /> */}
+      <button onClick={searchGraph}>Search</button>
+      <ForceGraph2D
+        graphData={graphData} />
       {graphLoading
         ? <p>Loading...</p>
         : <ForceGraph2D
